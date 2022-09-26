@@ -18,55 +18,64 @@ namespace Spiderman
 
         public enum SectionType : uint
         {
-            TEXTUREDEFINITION = 0x1CAFE804,
+            SHADERTEXTURE = 0x1CAFE804,
             MATUNK1 = 0x3E45AA13,
-            MATUNK2 = 0x45C4F4C0,
+            SHADERFLOATS = 0x45C4F4C0,
             MATUNK3 = 0x8C049CCA,
-            MATUNK4 = 0xA59F667B,
+            SHADERFLOATVALUES = 0xA59F667B,
             MATUNK5 = 0xBBFC8900,
-            MATUNK6 = 0xBC93FB5E,
+            SHADERINTEGERS = 0xBC93FB5E,
             MATUNK7 = 0xE1275683,
             SHADEROVERRIDES = 0xF5260180,
             MATUNK9 = 0xF9C35F30,
             MATUNK10 = 0xFD113362,
-            MATERIALTEMPLATE1 = 0xC24B19D9,
 
-            // extras
+            // filetypes
             MATERIALFILE = 0x1C04EF8C,
             MATERIALTEMPLATE = 0x7DC03E3,
+            MATERIALTEMPLATE1 = 0xC24B19D9,
         }
 
         public override Section MapTypeToSection(SectionType sectiontype, byte[] data)
         {
             switch (sectiontype)
             {
-                case SectionType.TEXTUREDEFINITION:
-                    return new TextureDefinitions(data);
+                case SectionType.SHADERTEXTURE:
+                    return new ShaderTextures(data);
                 case SectionType.SHADEROVERRIDES:
                     return new ShaderOverrides(data);
+                case SectionType.SHADERFLOATS:
+                    return new ShaderFloats(data);
+                case SectionType.SHADERFLOATVALUES:
+                    return new ShaderFloatValues(data);
+                case SectionType.SHADERINTEGERS:
+                    return new ShaderIntegers(data);
                 default:
                     return new Section(data);
             }
         }
 
-        public class TextureDefinitions : Section
+        public class ShaderTextures : Section
         {
-            public TextureListEntry[] entries;
-            public const string displayname = "Textures";
+            public OrderedDictionary entries;
+            public SectionHeader dataseg;
 
-            public TextureDefinitions(byte[] data) : base(data)
+            public ShaderTextures(byte[] data) : base(data)
             {
-                entries = new TextureListEntry[data.Length / 16];
-                for (int i = 0; i < entries.Length; i++)
+                entries = new OrderedDictionary();
+
+                for (int i = 0; i < data.Length / 16; i++)
                 {
-                    entries[i] = new TextureListEntry(data.Skip(i * 16).Take(16).ToArray());
+                    var t = new ShaderTextureEntry(data.Skip(i * 16).Take(16).ToArray());
+                    entries[t.InputID] = t;
                 }
             }
 
             public override void ExternalDataParser(BinaryReader br)
             {
-                foreach (var entry in entries)
+                foreach (DictionaryEntry kv in entries)
                 {
+                    var entry = (ShaderTextureEntry)kv.Value;
                     br.BaseStream.Seek(entry.nameoffset + PS4Header.length, SeekOrigin.Begin);
                     entry.name = ReadStringZ(br);
                 }
@@ -74,29 +83,29 @@ namespace Spiderman
 
             public override bool ToBytes()
             {
-                newdata = new byte[entries.Length * 16];
-                for (int i = 0; i < entries.Length; i++)
+                newdata = new byte[entries.Values.Count * 16];
+                for (int i = 0; i < entries.Values.Count; i++)
                 {
-                    entries[i].ToBytes().CopyTo(newdata, i * 16);
+                    ((ShaderTextureEntry)entries[i]).ToBytes().CopyTo(newdata, i * 16);
                 }
                 return true;
             }
 
-            public class TextureListEntry
+            public class ShaderTextureEntry
             {
                 public uint nameoffset;
                 public ushort u1;
                 public ushort u2;
-                public uint u3;
+                public uint InputID;
                 public uint u4;
                 public string name;
 
-                public TextureListEntry(byte[] data)
+                public ShaderTextureEntry(byte[] data)
                 {
                     nameoffset = BitConverter.ToUInt32(data, 0);
                     u1 = BitConverter.ToUInt16(data, 4);
                     u2 = BitConverter.ToUInt16(data, 6);
-                    u3 = BitConverter.ToUInt32(data, 8);
+                    InputID = BitConverter.ToUInt32(data, 8);
                     u4 = BitConverter.ToUInt32(data, 12);
                 }
 
@@ -106,7 +115,7 @@ namespace Spiderman
                     BitConverter.GetBytes(nameoffset).CopyTo(data, 0);
                     BitConverter.GetBytes(u1).CopyTo(data, 4);
                     BitConverter.GetBytes(u2).CopyTo(data, 6);
-                    BitConverter.GetBytes(u3).CopyTo(data, 8);
+                    BitConverter.GetBytes(InputID).CopyTo(data, 8);
                     BitConverter.GetBytes(u4).CopyTo(data, 12);
                     return data;
                 }
@@ -116,56 +125,311 @@ namespace Spiderman
         public class ShaderOverrides : Section
         {
             public uint size;
-            // only 0 or 1.  seems to doubly define string 0 for a second purpose
-            public uint othercount;
-            public uint otherdefoffset;
-            public uint strcount;
-            public uint strdefoffset;
-            public uint strdataoffset;
-            public uint[] ids;
-            public List<string> strings;
-
-            public const string displayname = "Overrides";
+            public uint floatcount;
+            public uint floatoffset;
+            public uint intcount;
+            public uint intoffset;
+            public uint texcount;
+            public uint texoffset;
+            public uint texdataoffset;
+            public OrderedDictionary Floats;
+            public OrderedDictionary Ints;
+            public OrderedDictionary Textures;
 
             public ShaderOverrides(byte[] data) : base(data)
             {
                 size = BitConverter.ToUInt32(data, 0);
-                othercount = BitConverter.ToUInt32(data, 0xC);
-                otherdefoffset = BitConverter.ToUInt32(data, 0x10);
-                strcount = BitConverter.ToUInt32(data, 0x14);
-                strdefoffset = BitConverter.ToUInt32(data, 0x18);
-                strdataoffset = BitConverter.ToUInt32(data, 0x1C);
+                floatcount = BitConverter.ToUInt32(data, 0x4);
+                floatoffset = BitConverter.ToUInt32(data, 0x8);
+                intcount = BitConverter.ToUInt32(data, 0xC);
+                intoffset = BitConverter.ToUInt32(data, 0x10);
+                texcount = BitConverter.ToUInt32(data, 0x14);
+                texoffset = BitConverter.ToUInt32(data, 0x18);
+                texdataoffset = BitConverter.ToUInt32(data, 0x1C);
 
-                if (strdefoffset + 8 * strcount != strdataoffset)
+                if (texoffset + 8 * texcount != texdataoffset)
                     throw new Exception("Overrides assertion failed");
 
-                ids = new uint[strcount];
-                uint[] stringoffsets = new uint[strcount];
-                strings = new List<string>();
+                Floats = new OrderedDictionary();
+                int floatdatasize = 0;
+                for (int i = 0; i < floatcount; i++)
+                {
+                    var offset = BitConverter.ToUInt16(data, 0x28 + (i * 8));
+                    var floatsize = BitConverter.ToUInt16(data, 0x28 + (i * 8) + 2);
+                    floatdatasize += floatsize;
+                    var id = BitConverter.ToUInt32(data, 0x28 + (i * 8) + 4);
 
-                uint idx = strdefoffset;
-                for (int i = 0; i < strcount; i++, idx += 8)
-                    stringoffsets[i] = BitConverter.ToUInt32(data, (int)idx);
+                    if (floatsize % 4 == 0)
+                    {
+                        var datasize = 4;
+                        var fs = new float[floatsize / datasize];
+                        Floats[id] = fs;
+                        for (int j = 0; j < floatsize / datasize; j++)
+                            fs[j] = BitConverter.ToSingle(data, (int)(floatoffset + offset + j * datasize));
+                    }
+                    else if (floatsize % 2 == 0)
+                    {
+                        // not sure this is possible
+                        var datasize = 2;
+                        var fs = new ushort[floatsize / datasize];
+                        Floats[id] = fs;
+                        for (int j = 0; j < floatsize / datasize; j++)
+                            fs[j] = BitConverter.ToUInt16(data, (int)(floatoffset + offset + j * datasize));
+                    }
+                    else
+                    {
+                        // or this
+                        var fs = new byte[floatsize];
+                        Floats[id] = fs;
+                        for (int j = 0; j < floatsize; j++)
+                            fs[j] = data[floatoffset + offset + j];
+                    }
+                }
 
-                (strings, var offsets) = UnpackStrings(data.Skip((int)idx).ToArray(), stringoffsets);
+                Ints = new OrderedDictionary();
+                for (int i = 0; i < intcount; i++)
+                {
+                    var val = BitConverter.ToUInt32(data, (int)intoffset + (i * 8));
+                    var id = BitConverter.ToUInt32(data, (int)intoffset + (i * 8) + 4);
+                    Ints[id] = val;
+                }
+
+                Textures = new OrderedDictionary();
+
+                var ids = new uint[texcount];
+                var offsets = new uint[texcount];
+                for (int i = 0; i < texcount; i++)
+                {
+                    offsets[i] = BitConverter.ToUInt32(data, (int)texoffset + (i * 8));
+                    ids[i] = BitConverter.ToUInt32(data, (int)texoffset + (i * 8) + 4);
+                }
+                var outstrings = UnpackStrings(data.Skip((int)texdataoffset).ToArray(), offsets).Item1;
+
+                for (int i = 0; i < texcount; i++)
+                {
+                    Textures[ids[i]] = outstrings[i];
+                }
             }
 
             public override bool ToBytes()
             {
-                (byte[] stringdata, uint[] offsets) = PackStrings(strings);
-                if (strings.Count != strcount)
-                    throw new Exception("Cannot change string count");
+                (byte[] newtexdata, uint[] newstroffset) = PackStrings(Textures.Cast<DictionaryEntry>().Select(s => (string)s.Value).ToList());
+                texcount = (uint)Textures.Count;
+                byte[] newtexoffsetdata = new byte[Textures.Count * 8];
+                for (int i = 0; i < texcount; i++)
+                {
+                    BitConverter.GetBytes(newstroffset[i]).CopyTo(newtexoffsetdata, i * 8);
+                    BitConverter.GetBytes((uint)Textures.Cast<DictionaryEntry>().ElementAt(i).Key).CopyTo(newtexoffsetdata, i * 8 + 4);
+                }
 
-                size = strdataoffset + (uint)stringdata.Length;
-                for (; size % 16 != 0; size++) { }
-                newdata = new byte[size];
-                data.Take((int)strdataoffset).ToArray().CopyTo(newdata, 0);
-                stringdata.CopyTo(newdata, strdataoffset);
-                BitConverter.GetBytes(size).CopyTo(newdata, 0);
+                byte[] newintdata = new byte[Ints.Count * 8];
+                for(int i = 0; i < Ints.Count; i++)
+                {
+                    BitConverter.GetBytes((uint)Ints[i]).CopyTo(newintdata, i * 8);
+                    BitConverter.GetBytes((uint)Ints.Cast<DictionaryEntry>().ElementAt(i).Key).CopyTo(newintdata, i * 8 + 4);
+                }
+                intcount = (uint)Ints.Count;
 
-                var oidx = strdefoffset;
-                for (uint i = 0; i < offsets.Length; i++, oidx += 8)
-                    BitConverter.GetBytes(offsets[i]).CopyTo(newdata, oidx);
+                byte[] newfloatoffsetdata = new byte[Floats.Count * 8];
+                var newfloatdataarray = Floats.Cast<DictionaryEntry>().Select(kv =>
+                    {
+                        switch (kv.Value)
+                        {
+                            case float[]:
+                                return ((float[])kv.Value).ToList().Select(f => BitConverter.GetBytes(f).ToList()).SelectMany(f => f);
+                                break;
+                            case ushort[]:
+                                return ((ushort[])kv.Value).ToList().Select(u => BitConverter.GetBytes(u).ToList()).SelectMany(u => u);
+                                break;
+                            case byte[]:
+                                return (byte[])kv.Value;
+                            default:
+                                throw new Exception("Float value must be float[], ushort[], or byte[]");
+                        }
+                    }).ToArray();
+
+                byte[] newfloatdata = newfloatdataarray.SelectMany(f => f).ToArray();
+                ushort soff = 0;
+                for (int i = 0; i < Floats.Count; i++)
+                {
+                    BitConverter.GetBytes(soff).CopyTo(newfloatoffsetdata, i * 8);
+                    BitConverter.GetBytes((ushort)newfloatdataarray[i].Count()).CopyTo(newfloatoffsetdata, i * 8 + 2);
+                    soff += (ushort)newfloatdataarray[i].Count();
+                    BitConverter.GetBytes((uint)Floats.Cast<DictionaryEntry>().ElementAt(i).Key).CopyTo(newfloatoffsetdata, i * 8 + 4);
+                }
+                floatcount = (uint)Floats.Count;
+
+                uint newsize = (uint)(0x28 + newfloatoffsetdata.Length + newfloatdata.Length + newintdata.Length + newtexoffsetdata.Length + newtexdata.Length);
+                for (; newsize % 16 != 0; newsize++) ;
+                newdata = new byte[newsize];
+                data.Take(0x28).ToArray().CopyTo(newdata, 0);
+                BitConverter.GetBytes(newsize).CopyTo(newdata, 0);
+
+                uint off = 0x28;
+                newfloatoffsetdata.CopyTo(newdata, off);
+                off += (uint)newfloatoffsetdata.Length;
+
+                BitConverter.GetBytes((uint)floatcount).CopyTo(newdata, 4);
+                newfloatdata.CopyTo(newdata, off);
+                BitConverter.GetBytes(off).CopyTo(newdata, 0x8);
+                off += (uint)newfloatdata.Length;
+
+                BitConverter.GetBytes((uint)intcount).CopyTo(newdata, 0xC);
+                newintdata.CopyTo(newdata, off);
+                BitConverter.GetBytes(off).CopyTo(newdata, 0x10);
+                off += (uint)newintdata.Length;
+
+                BitConverter.GetBytes((uint)texcount).CopyTo(newdata, 0x14);
+                newtexoffsetdata.CopyTo(newdata, off);
+                BitConverter.GetBytes(off).CopyTo(newdata, 0x18);
+                off += (uint)newtexoffsetdata.Length;
+
+                newtexdata.CopyTo(newdata, off);
+                BitConverter.GetBytes(off).CopyTo(newdata, 0x1C);
+
+                return true;
+            }
+        }
+
+        public class ShaderFloats : Section
+        {
+            public ShaderFloatDefinition[] definitions;
+            public OrderedDictionary values;
+
+            public ShaderFloats(byte[] data) : base(data)
+            {
+                definitions = new ShaderFloatDefinition[data.Length / 8];
+                for (int i = 0; i < data.Length / 8; i++)
+                    definitions[i] = new ShaderFloatDefinition(data.Skip(i * 8).Take(8).ToArray());
+            }
+
+            public override bool ToBytes()
+            {
+                newdata = new byte[definitions.Length * 8];
+                for (var i = 0; i < definitions.Length; i++)
+                    definitions[i].ToBytes().CopyTo(newdata, i * 8);
+
+                return true;
+            }
+
+            public override void PostProcess(Asset<SectionType> asset)
+            {
+                byte[] valuedata = asset.GetSection<ShaderFloatValues>()?.data ?? throw new Exception("Missing ShaderFloatValues");
+                values = new OrderedDictionary();
+
+                for (int i = 0; i < definitions.Length; i++)
+                {
+                    if (definitions[i].size % 4 == 0)
+                    {
+                        var fs = new float[definitions[i].size / 4];
+                        values[definitions[i].ID] = fs;
+                        for (int j = 0; j < fs.Length; j++)
+                            fs[j] = BitConverter.ToSingle(valuedata, definitions[i].offset + j * 4);
+                    }
+                    else if (definitions[i].size % 2 == 0)
+                    {
+                        var us = new ushort[definitions[i].size / 2];
+                        values[definitions[i].ID] = us;
+                        for (int j = 0; j < us.Length; j++)
+                            us[j] = BitConverter.ToUInt16(valuedata, definitions[i].offset + j * 2);
+                    }
+                    else
+                        values[definitions[i].ID] = valuedata.Skip(definitions[i].offset).Take(definitions[i].size).ToArray();
+                }
+            }
+
+            public void WriteValues(byte[] valuedata)
+            {
+                for (int i = 0; i < definitions.Length; i++)
+                {
+                    switch (values[i])
+                    {
+                        case float[]:
+                            var f = (float[])values[i];
+                            for (int j = 0; j < f.Length; j++)
+                                BitConverter.GetBytes(f[j]).CopyTo(valuedata, definitions[i].offset + j * 4);
+                            break;
+
+                        case ushort[]:
+                            var u = (ushort[])values[i];
+                            for (int j = 0; j < u.Length; j++)
+                                BitConverter.GetBytes(u[j]).CopyTo(valuedata, definitions[i].offset + j * 4);
+                            break;
+
+                        case byte[]:
+                            var b = (byte[])values[i];
+                            b.CopyTo(valuedata, definitions[i].offset);
+                            break;
+
+                    }
+                }
+            }
+
+            public class ShaderFloatDefinition
+            {
+                public ushort offset;
+                public ushort size;
+                public uint ID;
+
+                public ShaderFloatDefinition(byte[] data)
+                {
+                    offset = BitConverter.ToUInt16(data, 0);
+                    size = BitConverter.ToUInt16(data, 2);
+                    ID = BitConverter.ToUInt32(data, 4);
+                }
+
+                public byte[] ToBytes()
+                {
+                    byte[] newdata = new byte[8];
+                    BitConverter.GetBytes(offset).CopyTo(newdata, 0);
+                    BitConverter.GetBytes(size).CopyTo(newdata, 2);
+                    BitConverter.GetBytes(ID).CopyTo(newdata, 4);
+                    return newdata;
+                }
+            }
+        }
+
+        public class ShaderFloatValues : Section
+        {
+            public ShaderFloatValues(byte[] data) : base(data)
+            {
+                newdata = new byte[data.Length];
+            }
+
+            public override bool ToBytes()
+            {
+                return true;
+            }
+        }
+
+        public class ShaderIntegers : Section
+        {
+            public OrderedDictionary integers;
+            public ShaderIntegers(byte[] data) : base(data)
+            {
+                integers = new OrderedDictionary();
+                for (int i = 0; i < data.Length / 8; i++)
+                {
+                    uint val = BitConverter.ToUInt32(data, i * 8);
+                    uint ID = BitConverter.ToUInt32(data, i * 8 + 4);
+
+                    if (ID > 0)
+                        integers[ID] = val;
+                    else
+                        break;
+                }
+            }
+
+            public override bool ToBytes()
+            {
+                newdata = new byte[data.Length];
+                data.CopyTo(newdata, 0);
+                for (int i = 0; i < integers.Count; i++)
+                {
+                    if ((uint)integers.Keys.Cast<uint>().ElementAt(i) != BitConverter.ToUInt32(data, i * 8 + 4))
+                        throw new Exception("Cannot change integer IDs");
+                    BitConverter.GetBytes((uint)integers[i]).CopyTo(newdata, i * 8);
+                }
 
                 return true;
             }

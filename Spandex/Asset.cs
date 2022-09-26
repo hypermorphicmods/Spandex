@@ -17,7 +17,8 @@ namespace Spiderman
 
         public PS4Header ps4header;
         public Header header;
-        public string description;
+        // should not be edited
+        protected string description;
         public OrderedDictionary sectionheaders;
         public DataSegmentHeader[] segments;
         public SectionLayout sectionlayout;
@@ -111,6 +112,12 @@ namespace Spiderman
                     sections[sh.type] = MapTypeToSection(sh.type, data);
                 }
 
+                // processing that relies on other section data
+                foreach (DictionaryEntry kv in sections)
+                    ((Section)kv.Value).PostProcess(this);
+
+                // processing that references other data by offset
+                // sections should override ExternalDataParser()
                 foreach (DictionaryEntry kv in sections)
                     ((Section)kv.Value).ParseExternalData(br, PS4Header.length, sectionlayout);
             }
@@ -142,7 +149,7 @@ namespace Spiderman
                 }
 
                 if (section.ToBytes())
-                    sectionlayout.SetSize(key, (uint)section.newdata.Length, null); ;
+                    sectionlayout.SetSize(key, (uint)section.newdata.Length, null);
             }
 
             if (sectionlayout.GetTotalSize() > UInt32.MaxValue)
@@ -175,20 +182,22 @@ namespace Spiderman
                     w.Write(segments[i].endoffset);
                     w.Write(segments[i].startoffset);
                 }
+                w.Write(Encoding.ASCII.GetBytes(description));
+                w.Write((byte)0);
 
-
-                foreach (DictionaryEntry kv in sectionlayout)
+                for (int i = 0; i < sectionlayout.Count; i++)
                 {
-                    SectionHeader h = (SectionHeader)kv.Value;
+                    SectionHeader h = (SectionHeader)sectionlayout[i];
                     Section section;
 
-                    switch (kv.Key)
+                    var key = sectionlayout.Cast<DictionaryEntry>().ElementAt(i).Key;
+                    switch (key)
                     {
                         case GenericSectionType:
-                            section = (Section)sections[kv.Key];
+                            section = (Section)sections[key];
                             break;
                         case string s:
-                            section = (Section)kv.Value;
+                            section = (Section)h;
                             break;
                         default:
                             throw new Exception();
@@ -200,6 +209,11 @@ namespace Spiderman
                         w.Write(section.newdata);
                         while (w.BaseStream.Position % 16 != 4)
                             w.Write((byte)0);
+                        if (i + 1 < sectionlayout.Count)
+                        {
+                            uint padding = ((SectionHeader)sectionlayout[i + 1]).offset + PS4Header.length - (uint)w.BaseStream.Position;
+                            w.Write(new byte[padding]);
+                        }
                     }
                 }
             }
@@ -242,6 +256,7 @@ namespace Spiderman
                 br.BaseStream.Seek(savepos, SeekOrigin.Begin);
             }
 
+            public virtual void PostProcess(Asset<GenericSectionType> asset) { }
             public virtual void ExternalDataParser(BinaryReader br) { }
         }
 
@@ -251,7 +266,7 @@ namespace Spiderman
             public uint offset;
             public uint size;
 
-            public SectionHeader(byte[] data) : base(data)
+            public SectionHeader(byte[] data) : base(new byte[12])
             {
                 this.data = data;
                 type = (GenericSectionType)(object)BitConverter.ToUInt32(data, 0);
@@ -267,6 +282,36 @@ namespace Spiderman
                 BitConverter.GetBytes(size).CopyTo(newdata, 8);
                 return true;
             }
+        }
+
+        public SectionHeader CreateSectionHeader(GenericSectionType type)
+        {
+            // this is a dangerous function that will break all offsets into data segments
+            SectionHeader sh = new SectionHeader(new byte[12]);
+            sh.type = type;
+            sectionheaders[type] = sh;
+            header.sectionCount++;
+
+            for (int i = 0; i < sectionlayout.Count; i++)
+            {
+                if (sectionlayout[i] is DataSegmentHeader)
+                {
+                    var dsh = (DataSegmentHeader)sectionlayout[i];
+                    dsh.startoffset += 12;
+                    dsh.offset += 12;
+                    // wastes a little space on multiple calls
+                    dsh.endoffset += 16;
+                    dsh.size += 16;
+                }
+                else
+                    ((SectionHeader)sectionlayout[i]).offset += 16;
+            }
+
+            sh.offset = (uint)sectionlayout.GetTotalSize();
+            for (; sh.offset % 16 != 0; sh.offset++) ;
+
+            sectionlayout[type] = sh;
+            return sh;
         }
 
         public class SectionLayout : OrderedDictionary
@@ -457,7 +502,7 @@ namespace Spiderman
                     {
                         if (data[j] == 0)
                         {
-                            strings.Add(System.Text.Encoding.ASCII.GetString(data.Skip((int)offsets[i]).Take((int)(j - offsets[i])).ToArray()));
+                            strings.Add(Encoding.ASCII.GetString(data.Skip((int)offsets[i]).Take((int)(j - offsets[i])).ToArray()));
                             break;
                         }
                     }
@@ -473,7 +518,7 @@ namespace Spiderman
                     {
                         if (start != i)
                         {
-                            strings.Add(System.Text.Encoding.ASCII.GetString(data.Skip((int)start).Take((int)(i - start)).ToArray()));
+                            strings.Add(Encoding.ASCII.GetString(data.Skip((int)start).Take((int)(i - start)).ToArray()));
                             off.Add(start);
                         }
                         start = i + 1;
@@ -593,8 +638,9 @@ namespace Spiderman
         public class Headerless : SectionHeader
         {
             public bool moveable;
-            public Headerless(byte[] data) : base(data)
+            public Headerless(byte[] data) : base(new byte[12])
             {
+                this.data = data;
                 moveable = false;
             }
         }
