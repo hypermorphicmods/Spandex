@@ -28,13 +28,9 @@ namespace Spandex
 
             if (argv.Length > 0 && File.Exists(argv[0]))
                 Open(argv[0]);
-        }
 
-        private void opentemplatebutton_Click(object sender, EventArgs e)
-        {
-            // do some kind of reset here
-
-            // ProcessFile(f, 1);
+            statusLabel.Image = null;
+            statusLabel.Text = "Open an material file";
         }
 
         private void openbutton_Click(object sender, EventArgs e)
@@ -44,9 +40,11 @@ namespace Spandex
 
         private void Open(string filename = "")
         {
+            this.Text = $"Spandex";
             textures = new Dictionary<uint, GridEntry>();
             values = new Dictionary<uint, GridEntry[]>();
-            opentemplatebutton.Enabled = false;
+            statusLabel.Image = null;
+            statusLabel.Text = "Open an material file";
             savebutton.Enabled = false;
 
             var f = new OpenFileDialog();
@@ -54,7 +52,6 @@ namespace Spandex
             if (lastsourcedir is not null)
                 f.InitialDirectory = lastsourcedir;
             f.FileName = filename;
-            savebutton.Enabled = false;
 
             if (f.FileName != "" || f.ShowDialog() == DialogResult.OK)
             {
@@ -66,19 +63,31 @@ namespace Spandex
 
                 ProcessFile(f.FileName, 0);
 
-                opentemplatebutton.Enabled = true;
                 savebutton.Enabled = true;
 
-                if (textures.ContainsKey(0))
+                if (textures.ContainsKey(0) && textures[0].Value != null && textures[0].Value != "")
                 {
                     string trytemplate = lastsourcedir + (textures[0].Value as string).Replace('\\', '_').Replace('/', '_');
                     if (File.Exists(trytemplate))
                     {
                         ProcessFile(trytemplate, 1);
+                        statusLabel.Image = global::Spandex.Properties.Resources.ok;
+                        statusLabel.Text = $"Template loaded: {trytemplate}";
                     }
+                    else
+                    {
+                        statusLabel.Image = global::Spandex.Properties.Resources.warning;
+                        statusLabel.Text = $"Template could not be found: {trytemplate}";
+                    }
+                }
+                else
+                {
+                    statusLabel.Image = global::Spandex.Properties.Resources.ok;
+                    statusLabel.Text = $"Material loaded";
                 }
 
                 UseWaitCursor = false;
+                this.Text = $"{materials[0].assetfile} - Spandex";
             }
 
             stringGrid.DataSource = textures.Values.
@@ -307,7 +316,6 @@ namespace Spandex
                 material = materials[0];
 
 
-                var tl = material.GetSection<Material.TextureDefinitions>();
                 var tl = material.GetSection<Material.ShaderTextures>();
                 var datastrings = new List<string>();
                 var material8 = material.GetSection<Material.ShaderOverrides>();
@@ -425,7 +433,7 @@ namespace Spandex
 
         private void stringGrid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
-            stringGrid.Columns[1].Visible = materials[0]?.GetSectionHeader(Material.SectionType.MATUNK5) != null;
+            stringGrid.Columns[1].Visible = materials[0]?.GetSectionHeader(Material.SectionType.COMPILEDSHADERS) != null;
 
             foreach (DataGridViewRow row in stringGrid.Rows)
             {
@@ -446,7 +454,7 @@ namespace Spandex
 
         private void valueGrid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
-            valueGrid.Columns[2].Visible = materials[0]?.GetSectionHeader(Material.SectionType.MATUNK5) != null;
+            valueGrid.Columns[2].Visible = materials[0]?.GetSectionHeader(Material.SectionType.COMPILEDSHADERS) != null;
 
             foreach (DataGridViewRow row in valueGrid.Rows)
             {
@@ -464,6 +472,14 @@ namespace Spandex
             }
         }
 
+        private void stringGrid_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex == 0 && e.ColumnIndex == 2)
+            {
+                statusLabel.Image = global::Spandex.Properties.Resources.warning;
+                statusLabel.Text = $"Template path changed.  Save and reopen to apply the new template.";
+            }
+        }
 
         private void valueGrid_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {

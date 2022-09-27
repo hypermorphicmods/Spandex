@@ -23,7 +23,7 @@ namespace Spiderman
             SHADERFLOATS = 0x45C4F4C0,
             MATUNK3 = 0x8C049CCA,
             SHADERFLOATVALUES = 0xA59F667B,
-            MATUNK5 = 0xBBFC8900,
+            COMPILEDSHADERS = 0xBBFC8900,
             SHADERINTEGERS = 0xBC93FB5E,
             MATUNK7 = 0xE1275683,
             SHADEROVERRIDES = 0xF5260180,
@@ -50,6 +50,8 @@ namespace Spiderman
                     return new ShaderFloatValues(data);
                 case SectionType.SHADERINTEGERS:
                     return new ShaderIntegers(data);
+                case SectionType.COMPILEDSHADERS:
+                    return new CompiledShaders(data);
                 default:
                     return new Section(data);
             }
@@ -432,6 +434,44 @@ namespace Spiderman
                 }
 
                 return true;
+            }
+        }
+
+        public class CompiledShaders : Section
+        {
+            public List<byte[]> vertex;
+            public List<byte[]> fragment;
+
+            public CompiledShaders(byte[] data) : base(data)
+            {
+                vertex = new List<byte[]>();
+                fragment = new List<byte[]>();
+
+                for (int i = 0; i < data.Length; )
+                {
+                    for ( ; i % 0x40 != 0; i++) ;
+                    // IGSH signature
+                    if (i + 4 + 4 > data.Length) 
+                        break;
+                    if ((BitConverter.ToUInt32(data, i) != 0x48534749))
+                    {
+                        i++;
+                        continue;
+                    }
+                    i += 4;
+                    int vsize = BitConverter.ToInt32(data, i);
+                    i += 4;
+                    int fsize = BitConverter.ToInt32(data, i);
+                    i += 4;
+
+                    if (i + vsize + fsize > data.Length)
+                        break;
+                    vertex.Add(data.Skip(i).Take(vsize).ToArray());
+                    i += vsize;
+                    fragment.Add(data.Skip(i).Take(fsize).ToArray());
+                    i += fsize;
+                    for (; i % 0x10 != 0; i++) ;
+                }
             }
         }
     }
