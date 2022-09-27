@@ -516,7 +516,13 @@ namespace Spiderman
                 {
                     if (data[i] == 0)
                     {
-                        if (start != i)
+                        if (i == 0)
+                        {
+                            // special case for empty starting string
+                            strings.Add("");
+                            off.Add(0);
+                        }
+                        else if (start != i)
                         {
                             strings.Add(Encoding.ASCII.GetString(data.Skip((int)start).Take((int)(i - start)).ToArray()));
                             off.Add(start);

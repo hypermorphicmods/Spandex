@@ -1,6 +1,6 @@
 namespace Spandex
 {
-    public enum KnownTextureIDs : uint
+    public enum KnownMaterialIDs : uint
     {
         Template = 0,
 

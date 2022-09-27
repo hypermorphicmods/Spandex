@@ -434,6 +434,8 @@ namespace Spandex
         private void stringGrid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             stringGrid.Columns[1].Visible = materials[0]?.GetSectionHeader(Material.SectionType.COMPILEDSHADERS) != null;
+            stringGrid.Columns[2].Visible = stringGrid.Columns[3].Visible = materials[0]?.GetSectionHeader(Material.SectionType.SHADEROVERRIDES) != null;
+            removeUndefTextures.Enabled = stringGrid.Columns[2].Visible;
 
             foreach (DataGridViewRow row in stringGrid.Rows)
             {
@@ -455,6 +457,8 @@ namespace Spandex
         private void valueGrid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             valueGrid.Columns[2].Visible = materials[0]?.GetSectionHeader(Material.SectionType.COMPILEDSHADERS) != null;
+            valueGrid.Columns[3].Visible = valueGrid.Columns[4].Visible = materials[0]?.GetSectionHeader(Material.SectionType.SHADEROVERRIDES) != null;
+            removeUndefFloats.Enabled = removeUndefInts.Enabled = valueGrid.Columns[3].Visible;
 
             foreach (DataGridViewRow row in valueGrid.Rows)
             {
@@ -546,7 +550,7 @@ namespace Spandex
                 if (value == 0)
                     IDdisplay = "Template";
                 else
-                    IDdisplay = Enum.IsDefined(typeof(KnownTextureIDs), value) ? $"{((KnownTextureIDs)value).ToString()} ({value:X8})" : $"{value:X8}";
+                    IDdisplay = Enum.IsDefined(typeof(KnownMaterialIDs), value) ? $"{((KnownMaterialIDs)value).ToString()} ({value:X8})" : $"{value:X8}";
                 id = value;
             }
         }
