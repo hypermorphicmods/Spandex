@@ -1,8 +1,6 @@
 using Spiderman;
 using System.Collections;
-using System.Collections.Specialized;
-using System.Globalization;
-using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Spandex
 {
@@ -11,6 +9,8 @@ namespace Spandex
         public Material[] materials;
         public Dictionary<uint, GridEntry> textures { get; set; }
         public Dictionary<uint, GridEntry[]> values { get; set; }
+        public HashSet<string> texturelist;
+        public HashSet<string> materialgraphlist;
         string lastsourcedir, lastoutputdir, lastsavefile;
 
         public Form1(string[] argv)
@@ -29,8 +29,38 @@ namespace Spandex
             if (argv.Length > 0 && File.Exists(argv[0]))
                 Open(argv[0]);
 
-            statusLabel.Image = null;
-            statusLabel.Text = "Open an material file";
+            statusLabel.Image = global::Spandex.Properties.Resources.warning;
+            statusLabel.Text = "layout.csv not found, autocomplete is disabled";
+
+            if (File.Exists("layout.csv"))
+            {
+                texturelist = new HashSet<string>();
+                materialgraphlist = new HashSet<string>();
+                Regex r = new Regex(@"^[^,]+");
+                foreach (var line in File.ReadAllLines("layout.csv"))
+                {
+                    var m = r.Match(line);
+                    if (m.Value != "")
+                    {
+                        var s = m.Value.Replace("\"", "");
+                        var s2 = s.ToLower();
+                        if (s2.EndsWith(".texture"))
+                            texturelist.Add(s);
+                        else if (s2.EndsWith(".materialgraph"))
+                            materialgraphlist.Add(s);
+                    }
+                }
+
+                statusLabel.Image = global::Spandex.Properties.Resources.ok;
+                statusLabel.Text = "Loaded layout.csv";
+            }
+
+            if (Screen.PrimaryScreen.WorkingArea.Width > this.Width)
+            {
+                float scale = 0.6f * Screen.PrimaryScreen.WorkingArea.Width / this.Width;
+                this.Width = (int)(scale * (float)this.Width);
+                this.Height = (int)(scale * (float)this.Height);
+            }
         }
 
         private void openbutton_Click(object sender, EventArgs e)
@@ -427,6 +457,8 @@ namespace Spandex
 
                 material.ToBytes();
                 material.Save(lastsavefile);
+                statusLabel.Image = global::Spandex.Properties.Resources.ok;
+                statusLabel.Text = $"Saved material: {lastsavefile}";
                 UseWaitCursor = false;
             }
         }
@@ -453,6 +485,25 @@ namespace Spandex
             }
         }
 
+        private void stringGrid_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex == 0 && e.ColumnIndex == 2)
+            {
+                statusLabel.Image = global::Spandex.Properties.Resources.warning;
+                statusLabel.Text = $"Template path changed.  Save and reopen to apply the new template.";
+            }
+        }
+
+        private void stringGrid_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            if (texturelist != null && (e.ColumnIndex == 1 || e.ColumnIndex == 2))
+            {
+                var form2 = new Form2(stringGrid.Rows[e.RowIndex].Cells[e.ColumnIndex].Value as string,
+                    stringGrid.CurrentCell.RowIndex == 0 ? materialgraphlist : texturelist);
+                if (form2.ShowDialog() == DialogResult.OK && form2.selected != null)
+                    stringGrid.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = form2.selected;
+            }
+        }
 
         private void valueGrid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
@@ -473,15 +524,6 @@ namespace Spandex
                     row.Cells[0].Style.ForeColor = SystemColors.Window;
                     row.Cells[1].Style.ForeColor = SystemColors.Window;
                 }
-            }
-        }
-
-        private void stringGrid_CellValueChanged(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex == 0 && e.ColumnIndex == 2)
-            {
-                statusLabel.Image = global::Spandex.Properties.Resources.warning;
-                statusLabel.Text = $"Template path changed.  Save and reopen to apply the new template.";
             }
         }
 
