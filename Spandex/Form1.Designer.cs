@@ -42,11 +42,6 @@
             this.stringGridEntryBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.bindingSource2 = new System.Windows.Forms.BindingSource(this.components);
             this.valueGrid = new System.Windows.Forms.DataGridView();
-            this.iDdisplayDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Type = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.valueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.templateValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.valueGridBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -60,6 +55,11 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.iDdisplayDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Type = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.valueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.templateValueDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.stringGrid)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.stringGridEntryBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource2)).BeginInit();
@@ -196,56 +196,6 @@
             this.valueGrid.TabIndex = 3;
             this.valueGrid.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.valueGrid_CellPainting);
             this.valueGrid.DataBindingComplete += new System.Windows.Forms.DataGridViewBindingCompleteEventHandler(this.valueGrid_DataBindingComplete);
-            // 
-            // iDdisplayDataGridViewTextBoxColumn
-            // 
-            this.iDdisplayDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.iDdisplayDataGridViewTextBoxColumn.DataPropertyName = "IDdisplay";
-            this.iDdisplayDataGridViewTextBoxColumn.HeaderText = "ID";
-            this.iDdisplayDataGridViewTextBoxColumn.MinimumWidth = 9;
-            this.iDdisplayDataGridViewTextBoxColumn.Name = "iDdisplayDataGridViewTextBoxColumn";
-            this.iDdisplayDataGridViewTextBoxColumn.ReadOnly = true;
-            this.iDdisplayDataGridViewTextBoxColumn.Width = 75;
-            // 
-            // Type
-            // 
-            this.Type.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Type.DataPropertyName = "Type";
-            this.Type.HeaderText = "Type";
-            this.Type.MinimumWidth = 9;
-            this.Type.Name = "Type";
-            this.Type.ReadOnly = true;
-            this.Type.Width = 97;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            this.dataGridViewTextBoxColumn1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.dataGridViewTextBoxColumn1.DataPropertyName = "InternalValue";
-            this.dataGridViewTextBoxColumn1.HeaderText = "Internal Shader";
-            this.dataGridViewTextBoxColumn1.MinimumWidth = 9;
-            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            this.dataGridViewTextBoxColumn1.Width = 179;
-            // 
-            // valueDataGridViewTextBoxColumn
-            // 
-            this.valueDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.valueDataGridViewTextBoxColumn.DataPropertyName = "Value";
-            this.valueDataGridViewTextBoxColumn.HeaderText = "External Template Override";
-            this.valueDataGridViewTextBoxColumn.MinimumWidth = 9;
-            this.valueDataGridViewTextBoxColumn.Name = "valueDataGridViewTextBoxColumn";
-            this.valueDataGridViewTextBoxColumn.Width = 276;
-            // 
-            // templateValueDataGridViewTextBoxColumn
-            // 
-            this.templateValueDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.templateValueDataGridViewTextBoxColumn.DataPropertyName = "TemplateValue";
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.templateValueDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle2;
-            this.templateValueDataGridViewTextBoxColumn.HeaderText = "External Template Default";
-            this.templateValueDataGridViewTextBoxColumn.MinimumWidth = 9;
-            this.templateValueDataGridViewTextBoxColumn.Name = "templateValueDataGridViewTextBoxColumn";
-            this.templateValueDataGridViewTextBoxColumn.ReadOnly = true;
-            this.templateValueDataGridViewTextBoxColumn.Width = 266;
             // 
             // valueGridBindingSource
             // 
@@ -395,6 +345,56 @@
             this.statusLabel.Name = "statusLabel";
             this.statusLabel.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
             this.statusLabel.Size = new System.Drawing.Size(38, 28);
+            // 
+            // iDdisplayDataGridViewTextBoxColumn
+            // 
+            this.iDdisplayDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.iDdisplayDataGridViewTextBoxColumn.DataPropertyName = "IDdisplay";
+            this.iDdisplayDataGridViewTextBoxColumn.HeaderText = "ID";
+            this.iDdisplayDataGridViewTextBoxColumn.MinimumWidth = 9;
+            this.iDdisplayDataGridViewTextBoxColumn.Name = "iDdisplayDataGridViewTextBoxColumn";
+            this.iDdisplayDataGridViewTextBoxColumn.ReadOnly = true;
+            this.iDdisplayDataGridViewTextBoxColumn.Width = 75;
+            // 
+            // Type
+            // 
+            this.Type.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Type.DataPropertyName = "Type";
+            this.Type.HeaderText = "Type";
+            this.Type.MinimumWidth = 9;
+            this.Type.Name = "Type";
+            this.Type.ReadOnly = true;
+            this.Type.Width = 97;
+            // 
+            // dataGridViewTextBoxColumn1
+            // 
+            this.dataGridViewTextBoxColumn1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.dataGridViewTextBoxColumn1.DataPropertyName = "InternalValue";
+            this.dataGridViewTextBoxColumn1.HeaderText = "Internal Shader";
+            this.dataGridViewTextBoxColumn1.MinimumWidth = 9;
+            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
+            this.dataGridViewTextBoxColumn1.Width = 195;
+            // 
+            // valueDataGridViewTextBoxColumn
+            // 
+            this.valueDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.valueDataGridViewTextBoxColumn.DataPropertyName = "Value";
+            this.valueDataGridViewTextBoxColumn.HeaderText = "External Template Overrides";
+            this.valueDataGridViewTextBoxColumn.MinimumWidth = 9;
+            this.valueDataGridViewTextBoxColumn.Name = "valueDataGridViewTextBoxColumn";
+            this.valueDataGridViewTextBoxColumn.Width = 284;
+            // 
+            // templateValueDataGridViewTextBoxColumn
+            // 
+            this.templateValueDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.templateValueDataGridViewTextBoxColumn.DataPropertyName = "TemplateValue";
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.templateValueDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle2;
+            this.templateValueDataGridViewTextBoxColumn.HeaderText = "External Template Default";
+            this.templateValueDataGridViewTextBoxColumn.MinimumWidth = 9;
+            this.templateValueDataGridViewTextBoxColumn.Name = "templateValueDataGridViewTextBoxColumn";
+            this.templateValueDataGridViewTextBoxColumn.ReadOnly = true;
+            this.templateValueDataGridViewTextBoxColumn.Width = 266;
             // 
             // Form1
             // 

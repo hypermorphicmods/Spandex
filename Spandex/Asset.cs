@@ -82,6 +82,7 @@ namespace Spiderman
                 uint lastsectionend = 0;
                 for (int i = 0; i < sectionlayout.Count; i++)
                 {
+                    // find headerless stretches of data
                     // these sections should be considered unmoveable unless references to them can be patched
                     var sh = (SectionHeader)sectionlayout[i];
                     if (i > 0 && sh.offset > lastsectionend)
@@ -457,7 +458,6 @@ namespace Spiderman
                 for (; size % 16 != 0; size++) ;
                 return size;
             }
-
         }
 
         public SectionType? GetSection<SectionType>()
