@@ -1,5 +1,6 @@
 using Spiderman;
 using System.Collections;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Spandex
@@ -29,6 +30,7 @@ namespace Spandex
             if (argv.Length > 0 && File.Exists(argv[0]))
                 Open(argv[0]);
 
+            this.Text = $"Spandex v{Assembly.GetExecutingAssembly().GetName().Version.ToString(3)}";
             statusLabel.Image = global::Spandex.Properties.Resources.warning;
             statusLabel.Text = "layout.csv not found, autocomplete is disabled";
 
@@ -70,7 +72,7 @@ namespace Spandex
 
         private void Open(string filename = "")
         {
-            this.Text = $"Spandex";
+            this.Text = $"Spandex v{Assembly.GetExecutingAssembly().GetName().Version.ToString(3)}";
             textures = new Dictionary<uint, GridEntry>();
             values = new Dictionary<uint, GridEntry[]>();
             statusLabel.Image = null;
@@ -117,7 +119,7 @@ namespace Spandex
                 }
 
                 UseWaitCursor = false;
-                this.Text = $"{materials[0].assetfile} - Spandex";
+                this.Text = $"{materials[0].assetfile} - Spandex v{ Assembly.GetExecutingAssembly().GetName().Version.ToString(3)}";
             }
 
             stringGrid.DataSource = textures.Values.
