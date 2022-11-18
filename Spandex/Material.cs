@@ -12,7 +12,16 @@ namespace Spiderman
     {
         public Material(string filename) : base(filename)
         {
-            if (ps4header.type != SectionType.MATERIALFILE && ps4header.type != SectionType.MATERIALTEMPLATE)
+            var a = new HashSet<SectionType>()
+                {
+                    SectionType.MATERIALFILE,
+                    SectionType.MATERIALTEMPLATE,
+                    SectionType.MM_MATERIALFILE,
+                    SectionType.MM_MATERIALTEMPLATE,
+                    SectionType.PS4MM_MATERIALFILE,
+                    SectionType.PS4MM_MATERIALTEMPLATE
+                };
+            if (!a.Contains(ps4header.type))
                 throw new Exception("Not a material or material template file");
         }
 
@@ -32,8 +41,12 @@ namespace Spiderman
 
             // filetypes
             MATERIALFILE = 0x1C04EF8C,
+            MM_MATERIALFILE = 0x18757E9C,
+            PS4MM_MATERIALFILE = 0x1FC2627,
             MATERIALTEMPLATE = 0x7DC03E3,
             MATERIALTEMPLATE1 = 0xC24B19D9,
+            MM_MATERIALTEMPLATE = 0xFF60342A,
+            PS4MM_MATERIALTEMPLATE = 0x6100677A
         }
 
         public override Section MapTypeToSection(SectionType sectiontype, byte[] data)
