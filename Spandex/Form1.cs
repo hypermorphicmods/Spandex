@@ -320,7 +320,8 @@ namespace Spandex
             var f = new SaveFileDialog();
             switch (material.ps4header.type)
             {
-                case Material.SectionType.MATERIALTEMPLATE:
+                case Material.SectionType.SM_MATERIALTEMPLATE:
+                case Material.SectionType.MM_MATERIALTEMPLATE:
                     f.Filter = "Material template asset|*.materialgraph";
                     break;
                 default:
@@ -352,34 +353,41 @@ namespace Spandex
                 var datastrings = new List<string>();
                 var material8 = material.GetSection<Material.ShaderOverrides>();
                 var m8idx = 0;
-                Material.SectionHeader dataseg = tl == null ? material.segments[0] : material.sectionlayout.GetSectionByOffset(((Material.ShaderTextures.ShaderTextureEntry)tl.entries[0]).nameoffset);
+                Material.SectionHeader dataseg = tl == null ? (material.segments.Length > 0 ? material.segments[0] : null ) : material.sectionlayout.GetSectionByOffset(((Material.ShaderTextures.ShaderTextureEntry)tl.entries[0]).nameoffset);
 
-                if (textures[0].ID == 0)
-                {
+                if (textures.ContainsKey(0))
                     datastrings.Add((string?)textures[0].values[GridEntry.SLOTOVERRIDE].Value ?? String.Empty);
-                }
 
                 foreach (var kv in textures)
                 {
                     if (kv.Key == 0)
                         continue;
 
-                    if (tl != null && kv.Value.values[GridEntry.SLOTINTERNAL].Slot != null)
-                        datastrings.Add(((string?)kv.Value.values[GridEntry.SLOTINTERNAL].Value) ?? String.Empty);
+                    if (tl != null)
+                    {
+                        if (kv.Value.values[GridEntry.SLOTINTERNAL].Slot != null)
+                            datastrings.Add(((string?)kv.Value.values[GridEntry.SLOTINTERNAL].Value) ?? String.Empty);
+                    }
 
-                    if (!removeUndefTextures.Checked || materials[1] == null || kv.Value.values[GridEntry.SLOTEXTERNAL].Slot != null)
-                        material8.Textures[kv.Key] = kv.Value.values[GridEntry.SLOTOVERRIDE].Value ?? String.Empty;
-                    else if (material8.Textures.Contains(kv.Key))
-                        material8.Textures.Remove(kv.Key);
+                    if (material8 != null)
+                    {
+                        if (!removeUndefTextures.Checked || materials[1] == null || kv.Value.values[GridEntry.SLOTEXTERNAL].Slot != null)
+                            material8.Textures[kv.Key] = kv.Value.values[GridEntry.SLOTOVERRIDE].Value ?? String.Empty;
+                        else if (material8.Textures.Contains(kv.Key))
+                            material8.Textures.Remove(kv.Key);
+                    }
                 }
 
-                (dataseg.newdata, var offsets) = Material.PackStrings(datastrings);
-
-                if (tl != null)
+                if (dataseg != null)
                 {
-                    offsets = offsets.Skip(offsets.Length - tl.entries.Count).ToArray();
-                    for (int i = 0; i < tl.entries.Count; i++)
-                        ((Material.ShaderTextures.ShaderTextureEntry)tl.entries[i]).nameoffset = offsets[i] + dataseg.offset;
+                    (dataseg.newdata, var offsets) = Material.PackStrings(datastrings);
+
+                    if (tl != null)
+                    {
+                        offsets = offsets.Skip(offsets.Length - tl.entries.Count).ToArray();
+                        for (int i = 0; i < tl.entries.Count; i++)
+                            ((Material.ShaderTextures.ShaderTextureEntry)tl.entries[i]).nameoffset = offsets[i] + dataseg.offset;
+                    }
                 }
 
 

@@ -14,12 +14,14 @@ namespace Spiderman
         {
             var a = new HashSet<SectionType>()
                 {
-                    SectionType.MATERIALFILE,
-                    SectionType.MATERIALTEMPLATE,
+                    SectionType.SM_MATERIALFILE,
+                    SectionType.SM_MATERIALTEMPLATE,
                     SectionType.MM_MATERIALFILE,
                     SectionType.MM_MATERIALTEMPLATE,
                     SectionType.PS4MM_MATERIALFILE,
-                    SectionType.PS4MM_MATERIALTEMPLATE
+                    SectionType.PS4MM_MATERIALTEMPLATE,
+                    SectionType.RC_MATERIALFILE,
+                    SectionType.RC_MATERIALTEMPLATE,
                 };
             if (!a.Contains(ps4header.type))
                 throw new Exception("Not a material or material template file");
@@ -40,13 +42,17 @@ namespace Spiderman
             MATUNK10 = 0xFD113362,
 
             // filetypes
-            MATERIALFILE = 0x1C04EF8C,
+            SM_MATERIALFILE = 0x1C04EF8C,
             MM_MATERIALFILE = 0x18757E9C,
-            PS4MM_MATERIALFILE = 0x1FC2627,
-            MATERIALTEMPLATE = 0x7DC03E3,
-            MATERIALTEMPLATE1 = 0xC24B19D9,
+            SM_MATERIALTEMPLATE = 0x7DC03E3,
             MM_MATERIALTEMPLATE = 0xFF60342A,
-            PS4MM_MATERIALTEMPLATE = 0x6100677A
+
+            PS4MM_MATERIALFILE = 0x1FC2627,
+            PS4MM_MATERIALTEMPLATE = 0x6100677A,
+
+            // Ratchet & Clank: Rift Apart
+            RC_MATERIALFILE = 0x7C7BD7D6,
+            RC_MATERIALTEMPLATE = 0xB742D85D,
         }
 
         public override Section MapTypeToSection(SectionType sectiontype, byte[] data)
